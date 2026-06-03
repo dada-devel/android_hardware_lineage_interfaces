@@ -20,6 +20,7 @@ namespace health {
 
 struct ChargingEnabledNode {
     const std::string path;
+    const std::string status_path;  // Optional: separate path for reading status
     const std::string value_true;
     const std::string value_false;
     const std::optional<int> supported_mode;
@@ -47,6 +48,7 @@ struct ChargingControl : public BnChargingControl {
     [[maybe_unused]] const ChargingEnabledNode* mChargingEnabledNode;
     [[maybe_unused]] const std::string* mChargingDeadlineNode;
     [[maybe_unused]] const ChargingLimitNode* mChargingLimitNode;
+    bool mChargingEnabled = true;  // Track state internally (default: enabled)
 };
 
 }  // namespace health

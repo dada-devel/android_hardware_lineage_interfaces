@@ -22,19 +22,24 @@ namespace health {
 static const std::vector<ChargingEnabledNode> kChargingEnabledNodes = {
 #ifdef HEALTH_CHARGING_CONTROL_CHARGING_PATH
         {HEALTH_CHARGING_CONTROL_CHARGING_PATH,
+#ifdef HEALTH_CHARGING_CONTROL_CHARGING_STATUS_PATH
+         HEALTH_CHARGING_CONTROL_CHARGING_STATUS_PATH,
+#else
+         "",
+#endif
          HEALTH_CHARGING_CONTROL_CHARGING_ENABLED,
          HEALTH_CHARGING_CONTROL_CHARGING_DISABLED,
          {}},
 #else
-        {"/sys/class/power_supply/battery/battery_charging_enabled", "1", "0",
+        {"/sys/class/power_supply/battery/battery_charging_enabled", "", "1", "0",
          static_cast<int>(ChargingControlSupportedMode::TOGGLE) |
                  static_cast<int>(ChargingControlSupportedMode::BYPASS)},
-        {"/sys/class/power_supply/battery/charging_enabled", "1", "0",
+        {"/sys/class/power_supply/battery/charging_enabled", "", "1", "0",
          static_cast<int>(ChargingControlSupportedMode::TOGGLE) |
                  static_cast<int>(ChargingControlSupportedMode::BYPASS)},
-        {"/sys/class/power_supply/battery/input_suspend", "0", "1",
+        {"/sys/class/power_supply/battery/input_suspend", "", "0", "1",
          static_cast<int>(ChargingControlSupportedMode::TOGGLE)},
-        {"/sys/class/qcom-battery/input_suspend", "0", "1",
+        {"/sys/class/qcom-battery/input_suspend", "", "0", "1",
          static_cast<int>(ChargingControlSupportedMode::TOGGLE)},
 #endif
 };
@@ -137,34 +142,30 @@ ChargingControl::ChargingControl()
 
 #ifdef HEALTH_CHARGING_CONTROL_SUPPORTS_TOGGLE
 ndk::ScopedAStatus ChargingControl::getChargingEnabled(bool* _aidl_return) {
-    std::string content;
-    if (!android::base::ReadFileToString(mChargingEnabledNode->path, &content, true)) {
-        LOG(ERROR) << "Failed to read current charging enabled value";
-        return ndk::ScopedAStatus::fromExceptionCode(EX_UNSUPPORTED_OPERATION);
-    }
-
-    content = android::base::Trim(content);
-
-    if (content == mChargingEnabledNode->value_true) {
-        *_aidl_return = true;
-    } else if (content == mChargingEnabledNode->value_false) {
-        *_aidl_return = false;
-    } else {
-        LOG(ERROR) << "Unknown value " << content;
-        return ndk::ScopedAStatus::fromExceptionCode(EX_ILLEGAL_STATE);
-    }
-
+    // Return internally tracked state since status node may not be readable
+    *_aidl_return = mChargingEnabled;
     return ndk::ScopedAStatus::ok();
 }
 
 ndk::ScopedAStatus ChargingControl::setChargingEnabled(bool enabled) {
     const auto& value =
             enabled ? mChargingEnabledNode->value_true : mChargingEnabledNode->value_false;
+
+#ifdef HEALTH_CHARGING_CONTROL_CHARGING_PATH2
+    // Write to secondary path first (e.g., smart_batt for Xiaomi)
+    const auto& value2 = enabled ? HEALTH_CHARGING_CONTROL_CHARGING_ENABLED2
+                                 : HEALTH_CHARGING_CONTROL_CHARGING_DISABLED2;
+    if (!android::base::WriteStringToFile(value2, HEALTH_CHARGING_CONTROL_CHARGING_PATH2, true)) {
+        LOG(WARNING) << "Failed to write to secondary charging node: " << strerror(errno);
+    }
+#endif
+
     if (!android::base::WriteStringToFile(value, mChargingEnabledNode->path, true)) {
         LOG(ERROR) << "Failed to write to charging enable node: " << strerror(errno);
         return ndk::ScopedAStatus::fromExceptionCode(EX_UNSUPPORTED_OPERATION);
     }
 
+    mChargingEnabled = enabled;
     return ndk::ScopedAStatus::ok();
 }
 #else

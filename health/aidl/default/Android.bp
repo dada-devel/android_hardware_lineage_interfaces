@@ -61,6 +61,8 @@ cc_binary {
     vintf_fragments: ["vendor.lineage.health-service.default.xml"],
     cflags: select(soong_config_variable("lineage_health", "charging_control_charging_path"), {
         any @ flag_val: ["-DHEALTH_CHARGING_CONTROL_CHARGING_PATH=\"" + flag_val + "\""],
+    }) + select(soong_config_variable("lineage_health", "charging_control_charging_status_path"), {
+        any @ flag_val: ["-DHEALTH_CHARGING_CONTROL_CHARGING_STATUS_PATH=\"" + flag_val + "\""],
         default: [],
     }) + select(soong_config_variable("lineage_health", "charging_control_deadline_path"), {
         any @ flag_val: ["-DHEALTH_CHARGING_CONTROL_DEADLINE_PATH=\"" + flag_val + "\""],
@@ -77,6 +79,15 @@ cc_binary {
     }) + select(soong_config_variable("lineage_health", "charging_control_charging_disabled"), {
         any @ flag_val: ["-DHEALTH_CHARGING_CONTROL_CHARGING_DISABLED=\"" + flag_val + "\""],
         default: ["-DHEALTH_CHARGING_CONTROL_CHARGING_DISABLED=\"0\""],
+    }) + select(soong_config_variable("lineage_health", "charging_control_charging_path2"), {
+        any @ flag_val: ["-DHEALTH_CHARGING_CONTROL_CHARGING_PATH2=\"" + flag_val + "\""],
+        default: [],
+    }) + select(soong_config_variable("lineage_health", "charging_control_charging_enabled2"), {
+        any @ flag_val: ["-DHEALTH_CHARGING_CONTROL_CHARGING_ENABLED2=\"" + flag_val + "\""],
+        default: ["-DHEALTH_CHARGING_CONTROL_CHARGING_ENABLED2=\"0\""],
+    }) + select(soong_config_variable("lineage_health", "charging_control_charging_disabled2"), {
+        any @ flag_val: ["-DHEALTH_CHARGING_CONTROL_CHARGING_DISABLED2=\"" + flag_val + "\""],
+        default: ["-DHEALTH_CHARGING_CONTROL_CHARGING_DISABLED2=\"1\""],
     }) + select(soong_config_variable("lineage_health", "charging_control_supports_bypass"), {
         true: ["-DHEALTH_CHARGING_CONTROL_SUPPORTS_BYPASS"],
         false: [],
